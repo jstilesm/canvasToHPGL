@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "preview": "tsx index.ts"
+  },
   "dependencies": {
     "tsx": "^4.23.12"
   },

@@ -11,10 +11,12 @@ export default class HGPL {
     private commands: string[] = [];
     private currentPosition: { x: number; y: number } = { x: 0, y: 0 };
     private unitsPerMM: number;
+    private currentPen: number;
     
     // #1 plotter unit == 0.025 mm 1 / .025 = 40;
     constructor(options: InitOptions = {}) {
         this.unitsPerMM = options.unitsPerMM ?? 40;
+        this.currentPen = options.defaultPen ?? 4;
         this.init(options);
   }
   private init(options: InitOptions) {
@@ -61,11 +63,20 @@ export default class HGPL {
     this.penUP();
   }
   polyLine(points: Point[]) {
-    this.set(points[0].x, points[0].y);
+    this.set(points[0].x, points[0].y)
     this.penDOWN();
     points.forEach((point) => {
       this.set(point.x, point.y)
     })
+    this.penUP();
+  }
+  triangle(points: Point[]) {
+    this.set(points[0].x, points[0].y)
+    this.penDOWN();
+    points.forEach((point, i) => {
+      this.set(point.x, point.y)
+    })
+    this.set(points[0].x, points[0].y)
     this.penUP();
   }
   arc(

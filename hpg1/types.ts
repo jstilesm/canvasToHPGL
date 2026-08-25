@@ -2,14 +2,19 @@ export interface InitOptions {
     unitsPerMM?: number; // plotter units per MM
     defaultPen?: number; // selected Pen
 }
-export interface Point {
+export type Point = {
     x: number;
     y: number;
 }
-export interface Segment {
+export type Segment = {
     x1: number;
     y1: number;
     x2: number;
-    y2: number
+    y2: number;
+    pen: number;
 }
+export type Triangle = [
+    Point, Point, Point
+]
+
 
