@@ -3,9 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { execFile } from "node:child_process";
 import type { Point, Segment } from "./types";
-
-// Matches the machine bed size used in commands.ts / index.ts (plotter units, 40 units = 1mm)
-const BOUNDS: [number, number] = [10300, 7650];
+import { BOUNDS, INK_HALO_COLOR, PEN_COLORS, UNITS_PER_MM, isLightInk } from "./bed";
 
 export function commandsToSegments(hpgl: string): Segment[] {
     const commands = hpgl.split(";").map((c) => c.trim()).filter(Boolean);
@@ -61,20 +59,12 @@ export interface SvgOptions {
     showBounds?: boolean;
 }
 
-const DEFAULT_PEN_COLORS: Record<number, string> = {
-    0: "#111111",
-    1: "#111111",
-    2: "#e63946",
-    3: "#2a9d8f",
-    4: "#264653",
-    5: "#f4a261",
-    6: "#8338ec",
-};
+const DEFAULT_PEN_COLORS: Record<number, string> = PEN_COLORS;
 
 export function hpglToSvg(hpgl: string, options: SvgOptions = {}): string {
     const {
         bounds = BOUNDS,
-        unitsPerMM = 40,
+        unitsPerMM = UNITS_PER_MM,
         background = "#ffffff",
         strokeWidthMM = 0.3,
         penColors = DEFAULT_PEN_COLORS,
@@ -91,11 +81,21 @@ export function hpglToSvg(hpgl: string, options: SvgOptions = {}): string {
     const toX = (x: number) => (x / unitsPerMM).toFixed(3);
     const toY = (y: number) => ((height - y) / unitsPerMM).toFixed(3);
 
-    const lines = segments.map(
-        (seg) =>
-            `<line x1="${toX(seg.x1)}" y1="${toY(seg.y1)}" x2="${toX(seg.x2)}" y2="${toY(seg.y2)}" ` +
-            `stroke="${penColors[seg.pen] ?? "#111111"}" stroke-width="${strokeWidthMM}" stroke-linecap="round" />`
-    );
+    const line = (seg: Segment, stroke: string, width: number) =>
+        `<line x1="${toX(seg.x1)}" y1="${toY(seg.y1)}" x2="${toX(seg.x2)}" y2="${toY(seg.y2)}" ` +
+        `stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" />`;
+
+    // White ink is invisible on white paper, so light pens get a slightly wider grey line
+    // underneath. Every halo is emitted before every stroke rather than interleaved, so one
+    // segment's halo can't paint over another segment's ink.
+    const halos = segments
+        .filter((seg) => isLightInk(penColors[seg.pen] ?? "#111111"))
+        .map((seg) => line(seg, INK_HALO_COLOR, strokeWidthMM * 2.2));
+
+    const lines = [
+        ...halos,
+        ...segments.map((seg) => line(seg, penColors[seg.pen] ?? "#111111", strokeWidthMM)),
+    ];
 
     const boundsRect = showBounds
         ? `<rect x="0" y="0" width="${widthMM}" height="${heightMM}" fill="none" stroke="#cccccc" stroke-width="${strokeWidthMM}" stroke-dasharray="2,2" />`

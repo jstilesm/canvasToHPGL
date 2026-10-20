@@ -1,6 +1,10 @@
 {
   "scripts": {
-    "preview": "tsx index.ts"
+    "web": "tsx server.ts",
+    "dev": "tsx watch server.ts",
+    "preview": "tsx index.ts",
+    "typecheck": "tsc --noEmit",
+    "plot": "tsx plot.ts"
   },
   "dependencies": {
     "tsx": "^4.23.12"
